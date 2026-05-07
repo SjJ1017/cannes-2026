@@ -249,13 +249,9 @@ function saveFile() {
   }
   if (failed.length) { alert('Could not find lines for:\n' + failed.join('\n')); return; }
 
-  // 2. Append new entries before closing ];
-  if (newEntries.length) {
-    const appendLines = '\n' + newEntries.map(sc => makeLine(sc)).join('\n');
-    const insertAt = text.lastIndexOf('];');
-    if (insertAt !== -1) {
-      text = text.slice(0, insertAt) + appendLines + '\n' + text.slice(insertAt);
-    }
+  // 2. Insert new entries in sorted position within their group
+  for (const sc of newEntries) {
+    text = insertSorted(text, sc, groupMap[sc.id]);
   }
 
   // Trigger download
@@ -376,6 +372,49 @@ function minsToStr(m) {
 
 function reEsc(s) {
   return s.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
+}
+
+// ── Sorted insertion ──────────────────────────────────────────────────────
+function sortKey(sc) {
+  // Pad single-digit hour so "9:00" < "11:00" lexicographically
+  const t = (sc.startTime || '00:00').padStart(5, '0');
+  // Midnight screenings (00:xx–03:xx) sort after evening by prefixing "25:"
+  const hour = parseInt(t.split(':')[0]);
+  const adjusted = hour < 4 ? `${hour + 24}:${t.split(':')[1]}` : t;
+  return (sc.date || '') + adjusted;
+}
+
+function insertSorted(text, sc, targetGroup) {
+  const lines = text.split('\n');
+  const newKey = sortKey(sc);
+
+  // Find the line range [sectionStart+1, sectionEnd) for targetGroup
+  let sectionStart = -1;
+  let sectionEnd   = lines.length;
+
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/\/\/ ─{3,}\s+(.+)/);
+    if (!m) continue;
+    const name = m[1].replace(/\s*─+\s*$/, '').trim();
+    if (name === targetGroup) {
+      sectionStart = i;
+    } else if (sectionStart !== -1) {
+      sectionEnd = i;
+      break;
+    }
+  }
+
+  // Find insertion point: first existing line whose sortKey > newKey
+  let insertAt = sectionEnd; // default: end of section
+  for (let i = (sectionStart === -1 ? 0 : sectionStart + 1); i < sectionEnd; i++) {
+    const idMatch = lines[i].match(/s\('([^']+)'/);
+    if (!idMatch) continue;
+    const existing = allScreenings.find(x => x.id === idMatch[1]);
+    if (existing && sortKey(existing) > newKey) { insertAt = i; break; }
+  }
+
+  lines.splice(insertAt, 0, makeLine(sc));
+  return lines.join('\n');
 }
 
 // ── Group map (from // ─── comments) ─────────────────────────────────────
