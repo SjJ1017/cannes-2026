@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>79e Festival de Cannes 2026 — Programme</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+
+<header id="app-header">
+  <h1>🎬 Cannes 2026</h1>
+  <nav id="tab-nav">
+    <button class="tab-btn active" data-tab="timeline">Timeline</button>
+    <button class="tab-btn" data-tab="map">Map</button>
+    <button class="tab-btn" data-tab="planner">Planner</button>
+    <button class="tab-btn" data-tab="myschedule">My Schedule ★</button>
+  </nav>
+  <div id="header-links">
+    <a id="link-official" href="https://www.festival-cannes.com/en/" target="_blank" rel="noopener">Official Site</a>
+    <a id="link-schedule" href="https://cdn.festival-cannes.com/media/uploads/2026/05/horaires-des-projections-2026.pdf" target="_blank" rel="noopener">PDF Schedule</a>
+  </div>
+  <button class="lang-btn" id="lang-toggle">FR</button>
+</header>
+
+<div id="filter-bar">
+  <div id="date-pills">
+    <button class="date-pill active" data-date="all">All</button>
+  </div>
+
+  <details class="filter-dropdown" id="section-dropdown">
+    <summary id="section-summary">Section ▾</summary>
+    <div class="dropdown-panel" id="section-panel"></div>
+  </details>
+
+  <details class="filter-dropdown" id="venue-dropdown">
+    <summary id="venue-summary">Venue ▾</summary>
+    <div class="dropdown-panel" id="venue-panel"></div>
+  </details>
+
+  <input type="search" id="search-input" placeholder="Search title or director…">
+
+  <span id="filter-count"></span>
+</div>
+
+<div id="legend"></div>
+
+<!-- TIMELINE TAB -->
+<section id="timeline-view" class="tab-section active">
+  <div id="timeline-container"></div>
+</section>
+
+<!-- MAP TAB -->
+<section id="map-view" class="tab-section">
+  <div id="map-container"></div>
+</section>
+
+<!-- PLANNER TAB -->
+<section id="planner-view" class="tab-section">
+  <div id="planner-toolbar">
+    <button id="conflict-btn">⚡ Detect Conflicts</button>
+    <span id="conflict-hint" style="color:var(--muted);font-size:12px">Star films in the timeline or list, then check for schedule conflicts.</span>
+  </div>
+  <div id="conflict-results"></div>
+  <div id="planner-list"></div>
+</section>
+
+<!-- MY SCHEDULE TAB -->
+<section id="myschedule-view" class="tab-section">
+  <div id="myschedule-toolbar">
+    <span id="starred-count"></span>
+    <button id="print-btn">🖨 Print Schedule</button>
+  </div>
+  <div id="myschedule-list"></div>
+  <p id="myschedule-empty" style="display:none">
+    No films starred yet.<br>
+    <strong>Star films in the Timeline or Planner to build your schedule.</strong>
+  </p>
+</section>
+
+<!-- MODAL -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div id="modal-box">
+    <button id="modal-close" aria-label="Close">✕</button>
+    <div id="modal-section-badge"></div>
+    <h2 id="modal-title"></h2>
+    <div id="modal-title-en"></div>
+    <div id="modal-meta"></div>
+    <button id="modal-star-btn"></button>
+    <div id="modal-nav">
+      <button class="modal-nav-btn" id="modal-prev">← Prev</button>
+      <span id="modal-pos" style="color:var(--muted);font-size:11px"></span>
+      <button class="modal-nav-btn" id="modal-next">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div class="block-tooltip" id="tooltip"></div>
+
+<script src="data.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+// ─── i18n ──────────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    'site.title':            '79th Festival de Cannes 2026 — Programme',
+    'tab.timeline':          'Timeline',
+    'tab.map':               'Map',
+    'tab.planner':           'Planner',
+    'tab.myschedule':        'My Schedule ★',
+    'filter.all':            'All',
+    'filter.section':        'Section',
+    'filter.venue':          'Venue',
+    'filter.search':         'Search title or director…',
+    'filter.count':          n => `${n} screening${n !== 1 ? 's' : ''}`,
+    'links.official':        'Official Site',
+    'links.schedule':        'PDF Schedule',
+    'conflict.btn':          '⚡ Detect Conflicts',
+    'conflict.hint':         'Star films in the timeline or list, then check for schedule conflicts.',
+    'conflict.none':         '✓ No conflicts in your starred schedule!',
+    'conflict.detected':     n => `⚡ ${n} conflict${n !== 1 ? 's' : ''} detected`,
+    'conflict.overlap':      'overlap',
+    'conflict.vs':           'vs',
+    'schedule.print':        '🖨 Print Schedule',
+    'schedule.empty':        'No films starred yet.',
+    'schedule.empty2':       'Star films in the Timeline or Planner to build your schedule.',
+    'starred':               n => `${n} film${n !== 1 ? 's' : ''} starred`,
+    'modal.director':        'Director',
+    'modal.date':            'Date',
+    'modal.time':            'Time',
+    'modal.venue':           'Venue',
+    'modal.duration':        'Duration',
+    'modal.access':          'Access',
+    'modal.films':           'Films',
+    'modal.star':            '☆ Add to My Schedule',
+    'modal.unstar':          '★ Starred (click to remove)',
+    'modal.free':            'FREE',
+    'modal.prev':            '← Prev',
+    'modal.next':            'Next →',
+    'timeline.noResults':    'No screenings match the current filters.',
+    'planner.noResults':     'No screenings match the current filters.',
+    'section.competition':        'Compétition',
+    'section.hors-competition':   'Out of Competition',
+    'section.cannes-premiere':    'Cannes Première',
+    'section.seance-speciale':    'Special Screening',
+    'section.un-certain-regard':  'Un Certain Regard',
+    'section.cannes-classics':    'Cannes Classics',
+    'section.cinema-de-demain':   'Cinéma de Demain',
+    'section.seances-du-lendemain': 'Next-Day Screenings',
+    'section.quinzaine':          'Quinzaine des Cinéastes',
+    'section.semaine-critique':   "Critics' Week",
+    'section.acid':               'ACID',
+    'section.reprise':            'Encore Screenings',
+    'section.plage':              'Beach Cinema',
+  },
+  fr: {
+    'site.title':            '79e Festival de Cannes 2026 — Programme',
+    'tab.timeline':          'Planning',
+    'tab.map':               'Carte',
+    'tab.planner':           'Sélection',
+    'tab.myschedule':        'Mon Programme ★',
+    'filter.all':            'Tous',
+    'filter.section':        'Section',
+    'filter.venue':          'Salle',
+    'filter.search':         'Rechercher un titre ou réalisateur…',
+    'filter.count':          n => `${n} projection${n !== 1 ? 's' : ''}`,
+    'links.official':        'Site Officiel',
+    'links.schedule':        'Programme PDF',
+    'conflict.btn':          '⚡ Détecter les conflits',
+    'conflict.hint':         "Ajoutez des films en favori, puis vérifiez les conflits d'horaires.",
+    'conflict.none':         '✓ Aucun conflit dans votre programme !',
+    'conflict.detected':     n => `⚡ ${n} conflit${n !== 1 ? 's' : ''} détecté${n !== 1 ? 's' : ''}`,
+    'conflict.overlap':      'chevauchement',
+    'conflict.vs':           'vs',
+    'schedule.print':        '🖨 Imprimer',
+    'schedule.empty':        'Aucun film en favori.',
+    'schedule.empty2':       'Ajoutez des films depuis le Planning ou la Sélection.',
+    'starred':               n => `${n} film${n !== 1 ? 's' : ''} en favori`,
+    'modal.director':        'Réalisateur',
+    'modal.date':            'Date',
+    'modal.time':            'Horaire',
+    'modal.venue':           'Salle',
+    'modal.duration':        'Durée',
+    'modal.access':          'Accès',
+    'modal.films':           'Films',
+    'modal.star':            '☆ Ajouter à mon programme',
+    'modal.unstar':          '★ En favori (cliquer pour retirer)',
+    'modal.free':            'GRATUIT',
+    'modal.prev':            '← Préc.',
+    'modal.next':            'Suiv. →',
+    'timeline.noResults':    'Aucune projection ne correspond aux filtres.',
+    'planner.noResults':     'Aucune projection ne correspond aux filtres.',
+    'section.competition':        'Compétition',
+    'section.hors-competition':   'Hors Compétition',
+    'section.cannes-premiere':    'Cannes Première',
+    'section.seance-speciale':    'Séance Spéciale',
+    'section.un-certain-regard':  'Un Certain Regard',
+    'section.cannes-classics':    'Cannes Classics',
+    'section.cinema-de-demain':   'Cinéma de Demain',
+    'section.seances-du-lendemain': 'Séances du Lendemain',
+    'section.quinzaine':          'Quinzaine des Cinéastes',
+    'section.semaine-critique':   'Semaine de la Critique',
+    'section.acid':               'ACID',
+    'section.reprise':            'Reprise de la Sélection',
+    'section.plage':              'Cinéma de la Plage',
+  }
+};
+
+let currentLang = localStorage.getItem('cannes2026_lang') || 'en';
+
+function t(key, ...args) {
+  const dict = I18N[currentLang] || I18N.en;
+  const val = dict[key] !== undefined ? dict[key] : (I18N.en[key] || key);
+  return typeof val === 'function' ? val(...args) : val;
+}
+
+function sectionLabel(sectionKey) {
+  return t('section.' + sectionKey);
+}
+
+// ─── AppState ──────────────────────────────────────────────────────────────
+const AppState = (() => {
+  let _listeners = [];
+  const state = {
+    starred: new Set(JSON.parse(localStorage.getItem('cannes2026_starred') || '[]')),
+    activeDate: 'all',
+    sections: new Set(),
+    venues: new Set(),
+    query: '',
+    activeTab: 'timeline',
+  };
+
+  function save() {
+    localStorage.setItem('cannes2026_starred', JSON.stringify([...state.starred]));
+  }
+  function notify() { _listeners.forEach(fn => fn(state)); }
+
+  return {
+    get: () => state,
+    subscribe: fn => _listeners.push(fn),
+    setDate: d => { state.activeDate = d; notify(); },
+    toggleSection: s => { state.sections.has(s) ? state.sections.delete(s) : state.sections.add(s); notify(); },
+    toggleVenue: v => { state.venues.has(v) ? state.venues.delete(v) : state.venues.add(v); notify(); },
+    setQuery: q => { state.query = q; notify(); },
+    setTab: t => { state.activeTab = t; notify(); },
+    toggleStar: id => { state.starred.has(id) ? state.starred.delete(id) : state.starred.add(id); save(); notify(); },
+    isStarred: id => state.starred.has(id),
+  };
+})();
+
+// ─── FilterEngine ──────────────────────────────────────────────────────────
+function normalize(str) {
+  return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function filterScreenings(screenings, state) {
+  const q = normalize(state.query);
+  return screenings.filter(sc => {
+    if (state.activeDate !== 'all' && sc.date !== state.activeDate) return false;
+    if (state.sections.size > 0 && !state.sections.has(sc.section)) return false;
+    if (state.venues.size > 0 && !state.venues.has(sc.venue)) return false;
+    if (q && !normalize(sc.title).includes(q) && !normalize(sc.director).includes(q) && !normalize(sc.titleEn).includes(q)) return false;
+    return true;
+  });
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function minFromTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  const total = h * 60 + m;
+  return total < 480 ? total + 1440 : total; // midnight screenings extend past 24:00
+}
+
+function fmtDur(min) {
+  if (!min) return '?';
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
+}
+
+function fmtDate(dateStr) {
+  const locale = currentLang === 'fr' ? 'fr-FR' : 'en-GB';
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function sectionColor(sc) {
+  return (SECTIONS[sc.section] || {}).color || '#888';
+}
+
+function venueName(id) {
+  const v = VENUES.find(v => v.id === id);
+  return v ? v.name : id;
+}
+
+// ─── Build UI controls ─────────────────────────────────────────────────────
+function buildFilterBar() {
+  const pillsEl = document.getElementById('date-pills');
+  // Remove any existing day pills (keep "All")
+  [...pillsEl.querySelectorAll('.date-pill:not([data-date="all"])')].forEach(el => el.remove());
+
+  FESTIVAL_DAYS.forEach(day => {
+    const btn = document.createElement('button');
+    btn.className = 'date-pill';
+    btn.dataset.date = day.date;
+    btn.innerHTML = `<span style="opacity:0.6;font-size:9px">${day.dayName}</span> ${day.label.replace(' May','').replace(' mai','')}`;
+    btn.title = day.label;
+    btn.addEventListener('click', () => AppState.setDate(day.date));
+    pillsEl.appendChild(btn);
+  });
+
+  // Section checkboxes
+  const sectionPanel = document.getElementById('section-panel');
+  sectionPanel.innerHTML = '';
+  Object.entries(SECTIONS).forEach(([key, sec]) => {
+    const label = document.createElement('label');
+    label.dataset.sectionKey = key;
+    label.innerHTML = `<input type="checkbox" data-section="${key}">
+      <span class="section-dot" style="background:${sec.color}"></span>
+      <span class="section-label-text">${sectionLabel(key)}</span>`;
+    label.querySelector('input').addEventListener('change', () => AppState.toggleSection(key));
+    sectionPanel.appendChild(label);
+  });
+
+  // Venue checkboxes
+  const venuePanel = document.getElementById('venue-panel');
+  venuePanel.innerHTML = '';
+  VENUES.forEach(v => {
+    const label = document.createElement('label');
+    const secColor = (SECTIONS[v.section] || {}).color || '#888';
+    label.innerHTML = `<input type="checkbox" data-venue="${v.id}">
+      <span class="section-dot" style="background:${secColor}"></span>
+      ${v.shortName} — <span style="color:var(--muted);font-size:10px">${v.name.replace(/\(.*\)/,'').trim()}</span>`;
+    label.querySelector('input').addEventListener('change', () => AppState.toggleVenue(v.id));
+    venuePanel.appendChild(label);
+  });
+
+  // Search
+  let searchTimer;
+  document.getElementById('search-input').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => AppState.setQuery(e.target.value), 200);
+  });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#section-dropdown')) document.getElementById('section-dropdown').removeAttribute('open');
+    if (!e.target.closest('#venue-dropdown')) document.getElementById('venue-dropdown').removeAttribute('open');
+  });
+}
+
+function buildLegend() {
+  document.getElementById('legend').innerHTML = Object.entries(SECTIONS).map(([key, sec]) =>
+    `<span class="legend-item"><span class="legend-dot" style="background:${sec.color}"></span>${sectionLabel(key)}</span>`
+  ).join('');
+}
+
+function applyI18nToStaticElements() {
+  document.documentElement.lang = currentLang;
+  document.title = t('site.title');
+  // Tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.textContent = t('tab.' + btn.dataset.tab);
+  });
+  // Filter
+  document.querySelector('.date-pill[data-date="all"]').textContent = t('filter.all');
+  document.getElementById('search-input').placeholder = t('filter.search');
+  // Links
+  document.getElementById('link-official').textContent = t('links.official');
+  document.getElementById('link-schedule').textContent = t('links.schedule');
+  // Lang toggle shows the OTHER language
+  document.getElementById('lang-toggle').textContent = currentLang === 'en' ? 'FR' : 'EN';
+  // Planner
+  document.getElementById('conflict-btn').textContent = t('conflict.btn');
+  document.getElementById('conflict-hint').textContent = t('conflict.hint');
+  // Schedule
+  document.getElementById('print-btn').textContent = t('schedule.print');
+  document.getElementById('myschedule-empty').innerHTML =
+    `${t('schedule.empty')}<br><strong>${t('schedule.empty2')}</strong>`;
+  // Section labels in dropdown
+  document.querySelectorAll('[data-section-key]').forEach(label => {
+    const key = label.dataset.sectionKey;
+    const span = label.querySelector('.section-label-text');
+    if (span) span.textContent = sectionLabel(key);
+  });
+  // Modal nav
+  document.getElementById('modal-prev').textContent = t('modal.prev');
+  document.getElementById('modal-next').textContent = t('modal.next');
+  // Legend
+  buildLegend();
+}
+
+function syncFilterBar(state) {
+  document.querySelectorAll('.date-pill').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.date === state.activeDate));
+  document.querySelectorAll('[data-section]').forEach(cb =>
+    cb.checked = state.sections.has(cb.dataset.section));
+  document.querySelectorAll('[data-venue]').forEach(cb =>
+    cb.checked = state.venues.has(cb.dataset.venue));
+  const sd = document.getElementById('section-summary');
+  const vd = document.getElementById('venue-summary');
+  sd.textContent = state.sections.size ? `${t('filter.section')} (${state.sections.size}) ▾` : `${t('filter.section')} ▾`;
+  vd.textContent = state.venues.size ? `${t('filter.venue')} (${state.venues.size}) ▾` : `${t('filter.venue')} ▾`;
+}
+
+// ─── Language toggle ───────────────────────────────────────────────────────
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  currentLang = currentLang === 'en' ? 'fr' : 'en';
+  localStorage.setItem('cannes2026_lang', currentLang);
+  applyI18nToStaticElements();
+  render(AppState.get());
+});
+
+// ─── Tab routing ───────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => AppState.setTab(btn.dataset.tab));
+});
+
+function syncTabs(state) {
+  document.querySelectorAll('.tab-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.tab === state.activeTab));
+  document.querySelectorAll('.tab-section').forEach(sec =>
+    sec.classList.toggle('active', sec.id === state.activeTab + '-view'));
+  if (state.activeTab === 'map') initMap(state);
+  else if (mapInstance) mapInstance.invalidateSize();
+}
+
+// ─── Timeline Renderer ─────────────────────────────────────────────────────
+const DAY_START = 480;
+const DAY_END   = 1620; // 27:00 (covers séances de minuit until 03:00)
+const PX_MIN    = 3;
+const SPAN_MIN  = DAY_END - DAY_START;
+const TRACK_W   = SPAN_MIN * PX_MIN;
+
+const VENUE_ORDER = ['GTL','DE','AV','BU','BA','CRO','OLY','AR','MIR','ST','AL','RAI','CI-I','CI-A','CI-X','CI-3','PLAGE'];
+
+const VENUE_GROUPS = [
+  { labelKey: 'Palais des Festivals', ids: ['GTL','DE','AV','BU','BA'] },
+  { labelKey: 'Croisette & Miramar',  ids: ['CRO','OLY','AR','MIR'] },
+  { labelKey: 'Ville de Cannes',      ids: ['ST','AL','RAI'] },
+  { labelKey: 'Le Cineum',            ids: ['CI-I','CI-A','CI-X','CI-3'] },
+  { labelKey: 'Cinéma de la Plage',   ids: ['PLAGE'] },
+];
+
+function blockLeft(startTime) {
+  return (minFromTime(startTime) - DAY_START) * PX_MIN;
+}
+function blockWidth(durationMin) {
+  return Math.max(4, (durationMin || 90) * PX_MIN);
+}
+
+let currentFilteredForModal = [];
+
+// Builds the time axis + venue rows for one day's screenings.
+// Returns an HTML string.
+function buildDayTimelineHTML(screenings) {
+  const byVenue = {};
+  VENUE_ORDER.forEach(id => byVenue[id] = []);
+  screenings.forEach(sc => { if (byVenue[sc.venue]) byVenue[sc.venue].push(sc); });
+
+  let html = `<div class="timeline-day-wrapper">`;
+
+  // Time axis
+  html += `<div style="display:flex;align-items:stretch">
+    <div style="min-width:160px;border-right:1px solid var(--border);background:var(--dark)"></div>
+    <div style="position:relative;flex:1;min-height:24px;border-bottom:1px solid var(--border);min-width:${TRACK_W}px">`;
+  for (let m = DAY_START; m <= DAY_END; m += 30) {
+    const left = (m - DAY_START) * PX_MIN;
+    const h = Math.floor(m / 60) % 24;
+    const min = m % 60;
+    html += `<div class="time-tick" style="left:${left}px">${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}</div>`;
+  }
+  html += `</div></div>`;
+
+  // Venue groups
+  VENUE_GROUPS.forEach(group => {
+    const groupVenues = group.ids.filter(id => byVenue[id] && byVenue[id].length > 0);
+    if (!groupVenues.length) return;
+
+    html += `<div class="venue-group">
+      <div class="venue-group-header" style="min-width:${TRACK_W + 160}px">${group.labelKey}</div>`;
+
+    groupVenues.forEach(venueId => {
+      const venue = VENUES.find(v => v.id === venueId);
+      const vscreenings = byVenue[venueId].sort((a,b) => minFromTime(a.startTime) - minFromTime(b.startTime));
+
+      html += `<div class="venue-row">
+        <div class="venue-label">
+          <span>${venue.shortName}</span>
+          <small style="color:var(--muted);font-size:9px;text-align:center">${venue.name.split('(')[0].trim()}</small>
+        </div>
+        <div class="venue-track" style="min-width:${TRACK_W}px">`;
+
+      vscreenings.forEach(sc => {
+        const left = blockLeft(sc.startTime);
+        const width = blockWidth(sc.durationMin);
+        const color = sectionColor(sc);
+        const isStarred = AppState.isStarred(sc.id);
+        const shortTitle = sc.title.split('(')[0].trim().substring(0, 28);
+
+        html += `<div class="block${isStarred ? ' starred' : ''}"
+          data-id="${sc.id}"
+          style="left:${left}px;width:${width}px;background:${color}cc;border:1.5px solid ${color}"
+        >${width > 60 ? `<span class="block-title" style="color:#111">${shortTitle}</span>` : ''}
+          <button class="star-btn${isStarred ? ' starred' : ''}" data-id="${sc.id}">${isStarred ? '★' : '☆'}</button>
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  html += `</div>`; // .timeline-day-wrapper
+  return html;
+}
+
+function renderTimeline(filtered, state) {
+  currentFilteredForModal = filtered;
+  const container = document.getElementById('timeline-container');
+
+  if (state.activeDate === 'all') {
+    // Render each festival day sequentially to avoid overlap
+    let html = '';
+    let hasContent = false;
+    FESTIVAL_DAYS.forEach(day => {
+      const dayScreenings = filtered.filter(sc => sc.date === day.date);
+      if (!dayScreenings.length) return;
+      hasContent = true;
+      html += `<div class="all-dates-day-header">
+        <span class="day-name">${day.dayName}</span>${day.label}
+      </div>`;
+      html += buildDayTimelineHTML(dayScreenings);
+    });
+    if (!hasContent) {
+      container.innerHTML = `<p class="no-results">${t('timeline.noResults')}</p>`;
+      return;
+    }
+    container.innerHTML = html;
+  } else {
+    if (!filtered.length) {
+      container.innerHTML = `<p class="no-results">${t('timeline.noResults')}</p>`;
+      return;
+    }
+    container.innerHTML = buildDayTimelineHTML(filtered);
+  }
+
+  // Attach events
+  container.querySelectorAll('.block').forEach(el => {
+    const sc = SCREENINGS.find(s => s.id === el.dataset.id);
+    if (!sc) return;
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('star-btn')) return;
+      openModal(sc, currentFilteredForModal);
+    });
+    el.addEventListener('mouseenter', e => showTooltip(sc, e));
+    el.addEventListener('mousemove', e => moveTooltip(e));
+    el.addEventListener('mouseleave', hideTooltip);
+  });
+
+  container.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      AppState.toggleStar(btn.dataset.id);
+    });
+  });
+}
+
+// ─── Tooltip ───────────────────────────────────────────────────────────────
+const tooltipEl = document.getElementById('tooltip');
+
+function showTooltip(sc, e) {
+  const color = sectionColor(sc);
+  tooltipEl.innerHTML = `<strong style="color:${color}">${sc.title}</strong>
+    ${sc.titleEn ? `<div style="color:var(--muted);font-style:italic;font-size:11px">${sc.titleEn}</div>` : ''}
+    <div class="tip-meta">${sc.director}</div>
+    <div class="tip-meta">${venueName(sc.venue)} · ${sc.startTime}${sc.durationMin ? ' · ' + fmtDur(sc.durationMin) : ''}</div>
+    <div class="tip-meta" style="color:${color};font-size:10px;text-transform:uppercase;margin-top:4px">${sectionLabel(sc.section)}</div>`;
+  tooltipEl.classList.add('visible');
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  tooltipEl.style.top  = Math.min(e.clientY + 16, window.innerHeight - tooltipEl.offsetHeight - 8) + 'px';
+  tooltipEl.style.left = Math.min(e.clientX + 12, window.innerWidth  - tooltipEl.offsetWidth  - 8) + 'px';
+  tooltipEl.style.transform = 'none';
+}
+function hideTooltip() { tooltipEl.classList.remove('visible'); }
+
+// ─── Film list helpers (shared by Planner + My Schedule) ───────────────────
+function filmItemHTML(sc, showConflict) {
+  const color = sectionColor(sc);
+  const isStarred = AppState.isStarred(sc.id);
+  return `<div class="film-item" data-id="${sc.id}">
+    <span class="film-time">${sc.startTime}</span>
+    <span class="film-section-dot" style="background:${color}" title="${sectionLabel(sc.section)}"></span>
+    <div class="film-info">
+      <div class="film-title">${sc.title}</div>
+      ${sc.titleEn ? `<div class="film-title-en">${sc.titleEn}</div>` : ''}
+      <div class="film-meta">${sc.director} · ${venueName(sc.venue)}${sc.durationMin ? ' · ' + fmtDur(sc.durationMin) : ''}</div>
+    </div>
+    ${sc.isFree ? `<span class="free-badge">${t('modal.free')}</span>` : ''}
+    ${showConflict ? '<span class="conflict-badge" style="display:none">⚡</span>' : ''}
+    <button class="film-star-btn${isStarred ? ' starred' : ''}" data-id="${sc.id}">${isStarred ? '★' : '☆'}</button>
+  </div>`;
+}
+
+function groupByDay(screenings) {
+  const days = {};
+  screenings.forEach(sc => {
+    if (!days[sc.date]) days[sc.date] = [];
+    days[sc.date].push(sc);
+  });
+  Object.values(days).forEach(arr => arr.sort((a,b) => minFromTime(a.startTime) - minFromTime(b.startTime)));
+  return days;
+}
+
+function attachFilmListEvents(container, filtered) {
+  container.querySelectorAll('.film-item').forEach(el => {
+    const sc = SCREENINGS.find(s => s.id === el.dataset.id);
+    if (!sc) return;
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('film-star-btn')) return;
+      openModal(sc, filtered);
+    });
+  });
+  container.querySelectorAll('.film-star-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      AppState.toggleStar(btn.dataset.id);
+    });
+  });
+}
+
+// ─── Planner Renderer ──────────────────────────────────────────────────────
+function renderPlanner(filtered) {
+  const listEl = document.getElementById('planner-list');
+  if (!filtered.length) {
+    listEl.innerHTML = `<p class="no-results">${t('planner.noResults')}</p>`;
+    return;
+  }
+  const days = groupByDay(filtered);
+  let html = '<div class="film-list">';
+  Object.entries(days).sort().forEach(([date, screenings]) => {
+    html += `<div class="day-section"><div class="day-header">${fmtDate(date)}</div>`;
+    screenings.forEach(sc => html += filmItemHTML(sc, true));
+    html += '</div>';
+  });
+  html += '</div>';
+  listEl.innerHTML = html;
+  attachFilmListEvents(listEl, filtered);
+}
+
+// ─── Conflict Detection ────────────────────────────────────────────────────
+document.getElementById('conflict-btn').addEventListener('click', () => {
+  const state = AppState.get();
+  const starred = [...state.starred].map(id => SCREENINGS.find(s => s.id === id)).filter(Boolean);
+  const conflicts = [];
+
+  for (let i = 0; i < starred.length; i++) {
+    for (let j = i + 1; j < starred.length; j++) {
+      const a = starred[i], b = starred[j];
+      if (a.date !== b.date) continue;
+      const aS = minFromTime(a.startTime), aE = aS + (a.durationMin || 90);
+      const bS = minFromTime(b.startTime), bE = bS + (b.durationMin || 90);
+      if (Math.max(aS, bS) < Math.min(aE, bE))
+        conflicts.push({ a, b, overlap: Math.min(aE, bE) - Math.max(aS, bS) });
+    }
+  }
+
+  const el = document.getElementById('conflict-results');
+  el.classList.add('visible');
+  if (!conflicts.length) {
+    el.innerHTML = `<h3 style="color:#27AE60">${t('conflict.none')}</h3>`;
+    return;
+  }
+  el.innerHTML = `<h3>${t('conflict.detected', conflicts.length)}</h3>` +
+    conflicts.map(c => `<div class="conflict-pair">
+      <span>${c.a.startTime}</span> ${c.a.title.split('(')[0].trim()}
+      ${t('conflict.vs')}
+      <span>${c.b.startTime}</span> ${c.b.title.split('(')[0].trim()}
+      — <span style="color:#F39C12">${t('conflict.overlap')}: ${fmtDur(c.overlap)}</span>
+      <span style="color:var(--muted);font-size:10px">(${fmtDate(c.a.date)})</span>
+    </div>`).join('');
+
+  document.querySelectorAll('.film-item .conflict-badge').forEach(el => el.style.display = 'none');
+  const conflictIds = new Set(conflicts.flatMap(c => [c.a.id, c.b.id]));
+  conflictIds.forEach(id => {
+    const item = document.querySelector(`.film-item[data-id="${id}"]`);
+    if (item) {
+      item.classList.add('conflict-highlight');
+      const badge = item.querySelector('.conflict-badge');
+      if (badge) badge.style.display = 'inline';
+    }
+  });
+});
+
+// ─── My Schedule Renderer ─────────────────────────────────────────────────
+function renderMySchedule(state) {
+  const listEl = document.getElementById('myschedule-list');
+  const emptyEl = document.getElementById('myschedule-empty');
+  const countEl = document.getElementById('starred-count');
+
+  const starred = [...state.starred].map(id => SCREENINGS.find(s => s.id === id)).filter(Boolean);
+  countEl.textContent = t('starred', starred.length);
+
+  if (!starred.length) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // Detect conflicts
+  const conflictIds = new Set();
+  for (let i = 0; i < starred.length; i++) {
+    for (let j = i + 1; j < starred.length; j++) {
+      const a = starred[i], b = starred[j];
+      if (a.date !== b.date) continue;
+      const aS = minFromTime(a.startTime), aE = aS + (a.durationMin || 90);
+      const bS = minFromTime(b.startTime), bE = bS + (b.durationMin || 90);
+      if (Math.max(aS, bS) < Math.min(aE, bE)) { conflictIds.add(a.id); conflictIds.add(b.id); }
+    }
+  }
+
+  const days = groupByDay(starred);
+  let html = '<div class="film-list">';
+  Object.entries(days).sort().forEach(([date, screenings]) => {
+    html += `<div class="day-section"><div class="day-header">${fmtDate(date)}</div>`;
+    screenings.forEach(sc => {
+      const color = sectionColor(sc);
+      const isConflict = conflictIds.has(sc.id);
+      html += `<div class="film-item${isConflict ? ' conflict-highlight' : ''}" data-id="${sc.id}" style="border-left:3px solid ${color}">
+        <span class="film-time">${sc.startTime}</span>
+        <div class="film-info">
+          <div class="film-title">${sc.title}${isConflict ? ' <span class="conflict-badge">⚡</span>' : ''}</div>
+          ${sc.titleEn ? `<div class="film-title-en">${sc.titleEn}</div>` : ''}
+          <div class="film-meta">${sc.director} · ${venueName(sc.venue)} · ${fmtDur(sc.durationMin)}</div>
+          <div class="film-meta" style="color:${color};font-size:10px">${sectionLabel(sc.section)}${sc.isFree ? ` · <span class="free-badge">${t('modal.free')}</span>` : ''}</div>
+        </div>
+        <button class="film-star-btn starred" data-id="${sc.id}">★</button>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  listEl.innerHTML = html;
+  attachFilmListEvents(listEl, starred);
+}
+
+document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+// ─── Modal ─────────────────────────────────────────────────────────────────
+let modalFiltered = [];
+let modalIdx = 0;
+
+function openModal(sc, filtered) {
+  modalFiltered = filtered;
+  modalIdx = filtered.findIndex(s => s.id === sc.id);
+  renderModal(sc);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function endTime(sc) {
+  const end = minFromTime(sc.startTime) + (sc.durationMin || 90);
+  return `${String(Math.floor(end / 60) % 24).padStart(2,'0')}:${String(end % 60).padStart(2,'0')}`;
+}
+
+function renderModal(sc) {
+  const color = sectionColor(sc);
+  const isStarred = AppState.isStarred(sc.id);
+  document.getElementById('modal-section-badge').textContent = sectionLabel(sc.section);
+  document.getElementById('modal-section-badge').style.cssText = `background:${color}22;color:${color};border:1px solid ${color}`;
+  document.getElementById('modal-title').textContent = sc.title;
+  const enEl = document.getElementById('modal-title-en');
+  enEl.textContent = sc.titleEn || '';
+  enEl.style.display = sc.titleEn ? 'block' : 'none';
+
+  document.getElementById('modal-meta').innerHTML = `
+    <div class="modal-meta-row"><span class="modal-meta-icon">🎬</span><span class="modal-meta-label">${t('modal.director')}</span><span class="modal-meta-val">${sc.director || '—'}</span></div>
+    <div class="modal-meta-row"><span class="modal-meta-icon">📅</span><span class="modal-meta-label">${t('modal.date')}</span><span class="modal-meta-val">${fmtDate(sc.date)}</span></div>
+    <div class="modal-meta-row"><span class="modal-meta-icon">🕐</span><span class="modal-meta-label">${t('modal.time')}</span><span class="modal-meta-val">${sc.startTime}${sc.durationMin ? ` — ${endTime(sc)}` : ''}</span></div>
+    <div class="modal-meta-row"><span class="modal-meta-icon">📍</span><span class="modal-meta-label">${t('modal.venue')}</span><span class="modal-meta-val">${venueName(sc.venue)}</span></div>
+    <div class="modal-meta-row"><span class="modal-meta-icon">⏱</span><span class="modal-meta-label">${t('modal.duration')}</span><span class="modal-meta-val">${sc.durationMin ? fmtDur(sc.durationMin) : '?'}</span></div>
+    ${sc.isFree ? `<div class="modal-meta-row"><span class="modal-meta-icon">🎟</span><span class="modal-meta-label">${t('modal.access')}</span><span class="modal-meta-val free-badge">${t('modal.free')}</span></div>` : ''}
+    ${sc.isProgramme && sc.films && sc.films.length ? `<div class="modal-meta-row"><span class="modal-meta-icon">🎞</span><span class="modal-meta-label">${t('modal.films')}</span><span class="modal-meta-val" style="white-space:pre-wrap">${sc.films.join('\n')}</span></div>` : ''}`;
+
+  const starBtn = document.getElementById('modal-star-btn');
+  starBtn.textContent = isStarred ? t('modal.unstar') : t('modal.star');
+  starBtn.className = isStarred ? 'starred' : '';
+  starBtn.dataset.id = sc.id;
+  document.getElementById('modal-pos').textContent = `${modalIdx + 1} / ${modalFiltered.length}`;
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById('modal-star-btn').addEventListener('click', e => {
+  AppState.toggleStar(e.currentTarget.dataset.id);
+  renderModal(modalFiltered[modalIdx]);
+});
+document.getElementById('modal-prev').addEventListener('click', () => {
+  if (modalIdx > 0) { modalIdx--; renderModal(modalFiltered[modalIdx]); }
+});
+document.getElementById('modal-next').addEventListener('click', () => {
+  if (modalIdx < modalFiltered.length - 1) { modalIdx++; renderModal(modalFiltered[modalIdx]); }
+});
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('modal-overlay').classList.contains('open')) return;
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowLeft' && modalIdx > 0) { modalIdx--; renderModal(modalFiltered[modalIdx]); }
+  if (e.key === 'ArrowRight' && modalIdx < modalFiltered.length - 1) { modalIdx++; renderModal(modalFiltered[modalIdx]); }
+});
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ─── Map Renderer ──────────────────────────────────────────────────────────
+let mapInstance = null;
+
+function initMap(state) {
+  if (mapInstance) { mapInstance.invalidateSize(); updateMapPopups(state); return; }
+
+  // Center chosen to show all venues: from Le Raimu (La Bocca, west) to
+  // Alexandre III (Palm Beach, east). Zoom 13 fits the full ~7km spread.
+  mapInstance = L.map('map-container').setView([43.5540, 7.0040], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19,
+  }).addTo(mapInstance);
+
+  const groups = {};
+  VENUES.forEach(v => { if (!groups[v.group]) groups[v.group] = []; groups[v.group].push(v); });
+
+  Object.values(groups).forEach(venues => {
+    const primary = venues[0];
+    const color = (SECTIONS[primary.section] || {}).color || '#888';
+    const icon = L.divIcon({
+      html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2px solid #000;box-shadow:0 2px 6px rgba(0,0,0,0.5)"></div>`,
+      className: '', iconSize: [14,14], iconAnchor: [7,7],
+    });
+    L.marker([primary.lat, primary.lng], { icon })
+      .addTo(mapInstance)
+      .bindPopup(() => buildPopup(venues, AppState.get()), { maxWidth: 320 });
+  });
+}
+
+function buildPopup(venues, state) {
+  const today = state.activeDate === 'all' ? FESTIVAL_DAYS[0].date : state.activeDate;
+  let html = `<div class="popup-venue-name">${venues.map(v => v.shortName).join(' / ')}</div>`;
+  html += `<div style="color:var(--muted);font-size:11px;margin-bottom:8px">${venues[0].address}</div>`;
+  venues.forEach(venue => {
+    const secColor = (SECTIONS[venue.section] || {}).color || '#888';
+    const screenings = SCREENINGS
+      .filter(sc => sc.venue === venue.id && sc.date === today)
+      .sort((a,b) => minFromTime(a.startTime) - minFromTime(b.startTime));
+    if (!screenings.length) return;
+    html += `<div class="popup-section-badge" style="background:${secColor}22;color:${secColor};border:1px solid ${secColor}">${venue.name}</div>`;
+    html += '<div class="popup-screenings">';
+    screenings.slice(0, 8).forEach(sc => {
+      html += `<div class="popup-screening"><span class="popup-time">${sc.startTime}</span>${sc.title.split('(')[0].trim()} <span style="color:var(--muted)">(${fmtDur(sc.durationMin)})</span></div>`;
+    });
+    if (screenings.length > 8) html += `<div style="color:var(--muted);font-size:10px">+${screenings.length - 8} more</div>`;
+    html += '</div>';
+  });
+  return html;
+}
+
+function updateMapPopups(state) {
+  if (!mapInstance) return;
+  mapInstance.eachLayer(layer => { if (layer.getPopup && layer.getPopup()) layer.getPopup().update(); });
+}
+
+// ─── Main render loop ──────────────────────────────────────────────────────
+function render(state) {
+  syncTabs(state);
+  syncFilterBar(state);
+
+  const filtered = filterScreenings(SCREENINGS, state);
+  document.getElementById('filter-count').textContent = t('filter.count', filtered.length);
+
+  if (state.activeTab === 'timeline')   renderTimeline(filtered, state);
+  if (state.activeTab === 'planner')    renderPlanner(filtered);
+  if (state.activeTab === 'myschedule') renderMySchedule(state);
+  if (state.activeTab === 'map' && mapInstance) updateMapPopups(state);
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+buildFilterBar();
+document.querySelector('.date-pill[data-date="all"]').addEventListener('click', () => AppState.setDate('all'));
+applyI18nToStaticElements();
+AppState.subscribe(render);
+render(AppState.get());
+</script>
+</body>
+</html>
