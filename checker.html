@@ -137,6 +137,7 @@
   <div class="spacer"></div>
   <input type="file" id="file-input" accept=".js" style="display:none">
   <button class="btn" id="btn-open">Open data.js</button>
+  <button class="btn" id="btn-add" disabled>＋ Add Entry</button>
   <button class="btn green" id="btn-save" disabled>💾 Download saved file</button>
 </div>
 
@@ -169,16 +170,21 @@
 
         <div class="field-grid" id="fields"></div>
 
-        <div class="card-actions">
+        <div class="card-actions" id="actions-edit">
           <button class="btn green" id="btn-pass">✓ Pass  <small style="opacity:.6">(Enter)</small></button>
           <button class="btn gold" id="btn-save-next">Save &amp; Next</button>
           <button class="btn" id="btn-revert" style="display:none">↺ Revert</button>
           <span class="hint">Tab between fields</span>
         </div>
+        <div class="card-actions" id="actions-add" style="display:none">
+          <button class="btn gold" id="btn-create">＋ Create Entry</button>
+          <button class="btn" id="btn-cancel-add">Cancel</button>
+        </div>
       </div>
 
     </div>
 
+    <datalist id="title-list"></datalist>
     <div id="jump-strip" style="display:none"></div>
   </div>
 </div>
@@ -190,11 +196,14 @@ let allScreenings = [];
 let filtered      = [];
 let currentIdx    = 0;
 let reviewed      = new Set();       // ids marked OK without edit
-let edits         = new Map();       // id → modified screening object
+let edits         = new Map();       // id → modified existing screening
+let newEntries    = [];              // new screenings to append
 let groupMap      = {};              // id → group label from // ─── comments
 let groups        = [];              // ordered group names
 let filterGroup   = 'all';
 let filterVenue   = 'all';
+let titleIndex    = new Map();       // normalized title → {director, titleEn, durationMin}
+let isAdding      = false;
 
 // ── File I/O ──────────────────────────────────────────────────────────────
 function openFile() {
@@ -210,12 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
       originalText = e.target.result;
       parseData(originalText);
       buildGroupMap(originalText);
+      buildTitleIndex();
+      buildTitleDatalist();
       buildSidebar();
       applyFilter();
       document.getElementById('welcome').style.display = 'none';
       document.getElementById('card').style.display = '';
       document.getElementById('jump-strip').style.display = '';
-      document.getElementById('btn-save').disabled = false;
+      document.getElementById('btn-add').disabled = false;
       updateProgress();
     };
     reader.readAsText(file);
@@ -223,8 +234,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function saveFile() {
-  if (edits.size === 0) { alert('No changes to save.'); return; }
+  if (edits.size === 0 && newEntries.length === 0) { alert('No changes to save.'); return; }
   let text = originalText;
+
+  // 1. Replace edited lines
   const failed = [];
   for (const [id, sc] of edits) {
     const re = new RegExp(`^([ \\t]*)s\\('${reEsc(id)}',[^\\n]*$`, 'm');
@@ -236,16 +249,23 @@ function saveFile() {
   }
   if (failed.length) { alert('Could not find lines for:\n' + failed.join('\n')); return; }
 
+  // 2. Append new entries before closing ];
+  if (newEntries.length) {
+    const appendLines = '\n' + newEntries.map(sc => makeLine(sc)).join('\n');
+    const insertAt = text.lastIndexOf('];');
+    if (insertAt !== -1) {
+      text = text.slice(0, insertAt) + appendLines + '\n' + text.slice(insertAt);
+    }
+  }
+
   // Trigger download
   const blob = new Blob([text], { type: 'text/javascript' });
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement('a'), { href: url, download: 'data.js' });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 
-  // Update in-memory state
+  // Sync in-memory state
   originalText = text;
   for (const [id, sc] of edits) {
     const i = allScreenings.findIndex(x => x.id === id);
@@ -254,10 +274,11 @@ function saveFile() {
     if (j !== -1) filtered[j] = sc;
   }
   edits.clear();
+  newEntries = [];
   updateProgress();
   updateUnsaved();
   showCurrent();
-  alert(`data.js downloaded (${edits.size === 0 ? 'all changes applied' : ''}).\nReplace your original data.js with the downloaded file.`);
+  alert('data.js downloaded.\nReplace your original data.js with the downloaded file.');
 }
 
 // ── Parse ─────────────────────────────────────────────────────────────────
@@ -269,6 +290,67 @@ function parseData(text) {
   } catch (e) {
     alert('Parse error: ' + e.message);
   }
+}
+
+// ── Title index ───────────────────────────────────────────────────────────
+function normalize(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+
+function buildTitleIndex() {
+  titleIndex.clear();
+  for (const sc of allScreenings) {
+    if (!sc.title) continue;
+    const key = normalize(sc.title);
+    if (!titleIndex.has(key)) {
+      titleIndex.set(key, { title: sc.title, director: sc.director||'', titleEn: sc.titleEn||'', durationMin: sc.durationMin||null });
+    } else {
+      const e = titleIndex.get(key);
+      if (!e.director   && sc.director)   e.director   = sc.director;
+      if (!e.titleEn    && sc.titleEn)    e.titleEn    = sc.titleEn;
+      if (!e.durationMin && sc.durationMin) e.durationMin = sc.durationMin;
+    }
+  }
+}
+
+function buildTitleDatalist() {
+  const dl = document.getElementById('title-list');
+  dl.innerHTML = [...titleIndex.values()].map(t => `<option value="${esc(t.title)}">`).join('');
+}
+
+// Auto-fill director/titleEn/duration when title matches a known movie
+function autoFillFromTitle(titleVal) {
+  const info = titleIndex.get(normalize(titleVal));
+  if (!info) return;
+  const map = { director: 'f-director', titleEn: 'f-titleEn', durationMin: 'f-durationMin' };
+  for (const [key, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el && !el.value && info[key]) { el.value = info[key]; el.classList.add('changed'); }
+  }
+}
+
+// Propagate meta (director/titleEn/durationMin) to all screenings with same title
+function propagateMeta(sc) {
+  const norm = normalize(sc.title);
+  const peers = allScreenings.filter(x => x.id !== sc.id && normalize(x.title) === norm);
+  if (!peers.length) return;
+  const toUpdate = peers.filter(x => {
+    const cur = edits.get(x.id) || x;
+    return cur.director !== sc.director || (cur.titleEn||'') !== (sc.titleEn||'') ||
+           String(cur.durationMin||'') !== String(sc.durationMin||'');
+  });
+  if (!toUpdate.length) return;
+  if (!confirm(`Propagate director / title EN / duration to ${toUpdate.length} other screening(s) of "${sc.title}"?`)) return;
+  for (const other of toUpdate) {
+    const updated = { ...(edits.get(other.id) || other), director: sc.director, titleEn: sc.titleEn, durationMin: sc.durationMin };
+    edits.set(other.id, updated);
+    const i = allScreenings.findIndex(x => x.id === other.id);
+    if (i !== -1) allScreenings[i] = updated;
+    const j = filtered.findIndex(x => x.id === other.id);
+    if (j !== -1) filtered[j] = updated;
+  }
+  // Refresh title index with updated data
+  buildTitleIndex();
 }
 
 // ── Serialize ─────────────────────────────────────────────────────────────
@@ -434,18 +516,122 @@ function showCurrent() {
   }
   document.getElementById('fields').innerHTML = html;
 
-  // watch changes
+  // Watch changes + auto-fill from title
   document.querySelectorAll('.field-in').forEach(el => {
     el.addEventListener('input', markChanged);
     el.addEventListener('change', markChanged);
   });
+  const titleEl = document.getElementById('f-title');
+  if (titleEl) {
+    titleEl.setAttribute('list', 'title-list');
+    titleEl.addEventListener('change', () => autoFillFromTitle(titleEl.value));
+  }
 
+  document.getElementById('actions-edit').style.display = '';
+  document.getElementById('actions-add').style.display  = 'none';
   document.getElementById('btn-revert').style.display = isEdited ? '' : 'none';
 
   const first = document.getElementById('f-title');
   if (first) { first.focus(); first.select(); }
 
   buildJump();
+}
+
+// ── Add entry form ────────────────────────────────────────────────────────
+function showAddForm() {
+  isAdding = true;
+  // Guess defaults from current context
+  const ref = filtered[currentIdx] || allScreenings[0] || {};
+  const defSection = ref.section || 'competition';
+  const defVenue   = filterVenue !== 'all' ? filterVenue : (ref.venue || 'GTL');
+  const defDate    = ref.date || '2026-05-12';
+
+  document.getElementById('card-pos').textContent = 'New Entry';
+  document.getElementById('card-id').textContent  = '(auto-generated)';
+  const pill = document.getElementById('status-pill');
+  pill.textContent = 'New ＋'; pill.className = 'status-pill pill-edited';
+
+  const FIELDS = [
+    { key:'title',       label:'Title',         type:'text',   val:'' },
+    { key:'titleEn',     label:'Title (EN)',     type:'text',   val:'' },
+    { key:'director',    label:'Director',       type:'text',   val:'' },
+    { key:'section',     label:'Section',        type:'select', opts:SECTIONS, val:defSection },
+    { key:'venue',       label:'Venue',          type:'select', opts:VENUES,   val:defVenue },
+    { key:'date',        label:'Date',           type:'text',   val:defDate },
+    { key:'startTime',   label:'Start Time',     type:'text',   val:'' },
+    { key:'durationMin', label:'Duration (min)', type:'number', val:'' },
+    { key:'flags',       label:'Flags',          type:'text',   val:'' },
+  ];
+
+  let html = '';
+  for (const f of FIELDS) {
+    let inp;
+    if (f.type === 'select') {
+      const opts = f.opts.map(o => `<option value="${o}"${o===f.val?' selected':''}>${o}</option>`).join('');
+      inp = `<select class="field-in" data-key="${f.key}" id="f-${f.key}">${opts}</select>`;
+    } else {
+      inp = `<input type="${f.type}" class="field-in" data-key="${f.key}" id="f-${f.key}" value="${esc(String(f.val))}">`;
+    }
+    html += `<div class="field-row"><div class="field-lbl">${f.label}</div><div>${inp}</div></div>`;
+  }
+  document.getElementById('fields').innerHTML = html;
+
+  // Auto-fill from title
+  const titleEl = document.getElementById('f-title');
+  if (titleEl) {
+    titleEl.setAttribute('list', 'title-list');
+    titleEl.addEventListener('change', () => autoFillFromTitle(titleEl.value));
+    titleEl.focus();
+  }
+
+  document.getElementById('actions-edit').style.display = 'none';
+  document.getElementById('actions-add').style.display  = '';
+  document.getElementById('jump-strip').style.display   = 'none';
+}
+
+function cancelAdd() {
+  isAdding = false;
+  document.getElementById('jump-strip').style.display = '';
+  showCurrent();
+}
+
+function createEntry() {
+  const titleEl = document.getElementById('f-title');
+  if (!titleEl || !titleEl.value.trim()) { alert('Title is required.'); titleEl && titleEl.focus(); return; }
+
+  const sc = { flags: [], isFree: false, isProgramme: false, films: [] };
+  document.querySelectorAll('.field-in').forEach(el => {
+    const key = el.dataset.key;
+    if (key === 'flags')           sc[key] = el.value.split(',').map(x=>x.trim()).filter(Boolean);
+    else if (el.type === 'number') sc[key] = el.value ? parseInt(el.value) : null;
+    else                           sc[key] = el.value;
+  });
+
+  // Generate ID
+  const day   = (sc.date||'').split('-')[2] || '00';
+  const slug  = (sc.title||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                  .replace(/[^a-z0-9]+/g,'-').slice(0,15).replace(/-$/,'');
+  const time  = (sc.startTime||'').replace(':','');
+  sc.id = `${(sc.venue||'xx').toLowerCase()}-${day}-${slug}-${time}`;
+
+  // Assign group
+  groupMap[sc.id] = filterGroup !== 'all' ? filterGroup : (groups[groups.length-1] || '');
+
+  allScreenings.push(sc);
+  newEntries.push(sc);
+  filtered.push(sc);
+  currentIdx = filtered.length - 1;
+
+  // Update title index
+  buildTitleIndex();
+  buildTitleDatalist();
+
+  isAdding = false;
+  document.getElementById('jump-strip').style.display = '';
+  reviewed.add(sc.id);
+  updateUnsaved();
+  updateProgress();
+  showCurrent();
 }
 
 function markChanged() {
@@ -498,9 +684,13 @@ function saveAndNext() {
   if (!hasChanges()) { pass(); return; }
   const sc = collectEdits();
   edits.set(sc.id, sc);
-  // update filtered reference so jump list shows correct state
   filtered[currentIdx] = sc;
+  const i = allScreenings.findIndex(x => x.id === sc.id);
+  if (i !== -1) allScreenings[i] = sc;
   reviewed.add(sc.id);
+  // Offer to propagate director/titleEn/durationMin to matching titles
+  propagateMeta(sc);
+  buildTitleIndex(); // refresh after propagation
   updateUnsaved();
   updateProgress();
   goNext();
@@ -556,14 +746,19 @@ function updateProgress() {
 }
 
 function updateUnsaved() {
+  const total = edits.size + newEntries.length;
   const el = document.getElementById('unsaved-badge');
-  el.style.display = edits.size ? '' : 'none';
-  if (edits.size) el.textContent = `● ${edits.size} unsaved change${edits.size>1?'s':''}`;
-  document.getElementById('btn-save').disabled = edits.size === 0;
+  el.style.display = total ? '' : 'none';
+  if (total) el.textContent = `● ${total} unsaved change${total>1?'s':''}`;
+  document.getElementById('btn-save').disabled = total === 0;
 }
 
 // ── Keyboard ──────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  if (isAdding) {
+    if (e.key === 'Escape') cancelAdd();
+    return;
+  }
   if (!filtered.length) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
     if (e.key === 'Enter') { e.preventDefault(); saveAndNext(); }
@@ -577,11 +772,14 @@ document.addEventListener('keydown', e => {
 // ── Bindings ──────────────────────────────────────────────────────────────
 document.getElementById('btn-open').addEventListener('click', openFile);
 document.getElementById('btn-save').addEventListener('click', saveFile);
+document.getElementById('btn-add').addEventListener('click', () => { if (allScreenings.length) showAddForm(); });
 document.getElementById('btn-pass').addEventListener('click', pass);
 document.getElementById('btn-save-next').addEventListener('click', saveAndNext);
 document.getElementById('btn-prev').addEventListener('click', goPrev);
 document.getElementById('btn-next').addEventListener('click', goNext);
 document.getElementById('btn-revert').addEventListener('click', revertCurrent);
+document.getElementById('btn-create').addEventListener('click', createEntry);
+document.getElementById('btn-cancel-add').addEventListener('click', cancelAdd);
 </script>
 </body>
 </html>
