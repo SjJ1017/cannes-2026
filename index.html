@@ -429,9 +429,15 @@ function syncTabs(state) {
 // ─── Timeline Renderer ─────────────────────────────────────────────────────
 const DAY_START = 480;
 const DAY_END   = 1620; // 27:00 (covers séances de minuit until 03:00)
-const PX_MIN    = 3;
 const SPAN_MIN  = DAY_END - DAY_START;
-const TRACK_W   = SPAN_MIN * PX_MIN;
+
+function getPxMin() {
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--px-min').trim()) || 3;
+}
+function getTrackW() { return SPAN_MIN * getPxMin(); }
+function getLabelW() {
+  return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--label-w').trim()) || 160;
+}
 
 const VENUE_ORDER = ['GTL','DE','AV','BU','BA','CRO','OLY','AR','MIR','ST','AL','RAI','CI-I','CI-A','CI-X','CI-3','PLAGE'];
 
@@ -444,10 +450,10 @@ const VENUE_GROUPS = [
 ];
 
 function blockLeft(startTime) {
-  return (minFromTime(startTime) - DAY_START) * PX_MIN;
+  return (minFromTime(startTime) - DAY_START) * getPxMin();
 }
 function blockWidth(durationMin) {
-  return Math.max(4, (durationMin || 90) * PX_MIN);
+  return Math.max(4, (durationMin || 90) * getPxMin());
 }
 
 let currentFilteredForModal = [];
@@ -463,13 +469,14 @@ function buildDayTimelineHTML(screenings) {
 
   // Time axis
   html += `<div style="display:flex;align-items:stretch">
-    <div style="min-width:160px;border-right:1px solid var(--border);background:var(--dark)"></div>
-    <div style="position:relative;flex:1;min-height:24px;border-bottom:1px solid var(--border);min-width:${TRACK_W}px">`;
+    <div style="min-width:${getLabelW()}px;border-right:1px solid var(--border);background:var(--dark)"></div>
+    <div style="position:relative;flex:1;min-height:24px;border-bottom:1px solid var(--border);min-width:${getTrackW()}px">`;
+  const _pxMin = getPxMin();
   for (let m = DAY_START; m <= DAY_END; m += 30) {
-    const left = (m - DAY_START) * PX_MIN;
+    const left = (m - DAY_START) * _pxMin;
     const h = Math.floor(m / 60) % 24;
     const min = m % 60;
-    html += `<div class="time-tick" style="left:${left}px">${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}</div>`;
+    html += `<div class="time-tick${min ? ' half' : ''}" style="left:${left}px">${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}</div>`;
   }
   html += `</div></div>`;
 
@@ -479,7 +486,7 @@ function buildDayTimelineHTML(screenings) {
     if (!groupVenues.length) return;
 
     html += `<div class="venue-group">
-      <div class="venue-group-header" style="min-width:${TRACK_W + 160}px">${group.labelKey}</div>`;
+      <div class="venue-group-header" style="min-width:${getTrackW() + getLabelW()}px">${group.labelKey}</div>`;
 
     groupVenues.forEach(venueId => {
       const venue = VENUES.find(v => v.id === venueId);
@@ -490,7 +497,7 @@ function buildDayTimelineHTML(screenings) {
           <span>${venue.shortName}</span>
           <small style="color:var(--muted);font-size:9px;text-align:center">${venue.name.split('(')[0].trim()}</small>
         </div>
-        <div class="venue-track" style="min-width:${TRACK_W}px">`;
+        <div class="venue-track" style="min-width:${getTrackW()}px">`;
 
       vscreenings.forEach(sc => {
         const left = blockLeft(sc.startTime);
