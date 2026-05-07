@@ -899,7 +899,12 @@ body {
     gap: 6px;
   }
 
-  /* Date pills — make them slightly smaller */
+  /* Date pills — full-width row, horizontal scroll within screen */
+  #date-pills {
+    width: 100%;
+    flex-basis: 100%;
+    order: -1;
+  }
   .date-pill {
     font-size: 10px;
     padding: 3px 7px;
