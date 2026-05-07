@@ -135,8 +135,9 @@
   <span id="progress">No file loaded</span>
   <span id="unsaved-badge">● unsaved changes</span>
   <div class="spacer"></div>
+  <input type="file" id="file-input" accept=".js" style="display:none">
   <button class="btn" id="btn-open">Open data.js</button>
-  <button class="btn green" id="btn-save" disabled>💾 Save to file</button>
+  <button class="btn green" id="btn-save" disabled>💾 Download saved file</button>
 </div>
 
 <div id="body">
@@ -184,7 +185,6 @@
 
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
-let fileHandle = null;
 let originalText  = '';
 let allScreenings = [];
 let filtered      = [];
@@ -197,30 +197,33 @@ let filterGroup   = 'all';
 let filterVenue   = 'all';
 
 // ── File I/O ──────────────────────────────────────────────────────────────
-async function openFile() {
-  try {
-    [fileHandle] = await window.showOpenFilePicker({
-      types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }],
-      id: 'data-js'
-    });
-    const file = await fileHandle.getFile();
-    originalText = await file.text();
-    parseData(originalText);
-    buildGroupMap(originalText);
-    buildSidebar();
-    applyFilter();
-    document.getElementById('welcome').style.display = 'none';
-    document.getElementById('card').style.display = '';
-    document.getElementById('jump-strip').style.display = '';
-    document.getElementById('btn-save').disabled = false;
-    updateProgress();
-  } catch (e) {
-    if (e.name !== 'AbortError') alert('Cannot open file:\n' + e.message);
-  }
+function openFile() {
+  document.getElementById('file-input').click();
 }
 
-async function saveFile() {
-  if (!fileHandle || edits.size === 0) return;
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('file-input').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      originalText = e.target.result;
+      parseData(originalText);
+      buildGroupMap(originalText);
+      buildSidebar();
+      applyFilter();
+      document.getElementById('welcome').style.display = 'none';
+      document.getElementById('card').style.display = '';
+      document.getElementById('jump-strip').style.display = '';
+      document.getElementById('btn-save').disabled = false;
+      updateProgress();
+    };
+    reader.readAsText(file);
+  });
+});
+
+function saveFile() {
+  if (edits.size === 0) { alert('No changes to save.'); return; }
   let text = originalText;
   const failed = [];
   for (const [id, sc] of edits) {
@@ -231,29 +234,30 @@ async function saveFile() {
       failed.push(id);
     }
   }
-  if (failed.length) {
-    alert('Could not find lines for:\n' + failed.join('\n'));
-    return;
+  if (failed.length) { alert('Could not find lines for:\n' + failed.join('\n')); return; }
+
+  // Trigger download
+  const blob = new Blob([text], { type: 'text/javascript' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: 'data.js' });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  // Update in-memory state
+  originalText = text;
+  for (const [id, sc] of edits) {
+    const i = allScreenings.findIndex(x => x.id === id);
+    if (i !== -1) allScreenings[i] = sc;
+    const j = filtered.findIndex(x => x.id === id);
+    if (j !== -1) filtered[j] = sc;
   }
-  try {
-    const w = await fileHandle.createWritable();
-    await w.write(text);
-    await w.close();
-    originalText = text;
-    // Sync allScreenings
-    for (const [id, sc] of edits) {
-      const i = allScreenings.findIndex(x => x.id === id);
-      if (i !== -1) allScreenings[i] = sc;
-      const j = filtered.findIndex(x => x.id === id);
-      if (j !== -1) filtered[j] = sc;
-    }
-    edits.clear();
-    updateProgress();
-    updateUnsaved();
-    showCurrent();
-  } catch (e) {
-    alert('Save error:\n' + e.message);
-  }
+  edits.clear();
+  updateProgress();
+  updateUnsaved();
+  showCurrent();
+  alert(`data.js downloaded (${edits.size === 0 ? 'all changes applied' : ''}).\nReplace your original data.js with the downloaded file.`);
 }
 
 // ── Parse ─────────────────────────────────────────────────────────────────
