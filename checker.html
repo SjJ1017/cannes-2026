@@ -37,7 +37,7 @@
 
     /* ── Sidebar ── */
     #sidebar {
-      width: 190px; background: #131313; border-right: 1px solid #222;
+      width: 230px; background: #131313; border-right: 1px solid #222;
       overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column;
     }
     #sidebar::-webkit-scrollbar { width: 4px; }
@@ -48,10 +48,11 @@
       color: #444; padding: 0 14px 4px; display: block;
     }
     .sb-item {
-      padding: 6px 14px; cursor: pointer; font-size: 12px; color: #888;
+      padding: 6px 14px; cursor: pointer; font-size: 11px; color: #888;
       border-left: 3px solid transparent; display: flex; justify-content: space-between;
       align-items: center; gap: 6px;
     }
+    .sb-item span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sb-item:hover { background: #1a1a1a; color: #ccc; }
     .sb-item.active { color: #c9a84c; border-left-color: #c9a84c; background: #1c1910; }
     .sb-count { font-size: 10px; color: #444; background: #1e1e1e; padding: 1px 5px; border-radius: 8px; }
@@ -190,7 +191,9 @@ let filtered      = [];
 let currentIdx    = 0;
 let reviewed      = new Set();       // ids marked OK without edit
 let edits         = new Map();       // id → modified screening object
-let filterSection = 'all';
+let groupMap      = {};              // id → group label from // ─── comments
+let groups        = [];              // ordered group names
+let filterGroup   = 'all';
 let filterVenue   = 'all';
 
 // ── File I/O ──────────────────────────────────────────────────────────────
@@ -203,6 +206,7 @@ async function openFile() {
     const file = await fileHandle.getFile();
     originalText = await file.text();
     parseData(originalText);
+    buildGroupMap(originalText);
     buildSidebar();
     applyFilter();
     document.getElementById('welcome').style.display = 'none';
@@ -288,11 +292,30 @@ function reEsc(s) {
   return s.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
 }
 
+// ── Group map (from // ─── comments) ─────────────────────────────────────
+function buildGroupMap(text) {
+  groupMap = {};
+  groups = [];
+  const seen = new Set();
+  let currentGroup = null;
+  for (const line of text.split('\n')) {
+    // Match screening-level separators: // ─── NAME ─────────
+    const m = line.match(/\/\/ ─{3,}\s+(.+)/);
+    if (m) {
+      const name = m[1].replace(/\s*─+\s*$/, '').trim();
+      currentGroup = name;
+      if (!seen.has(name)) { seen.add(name); groups.push(name); }
+    }
+    const id = (line.match(/s\('([^']+)'/) || [])[1];
+    if (id && currentGroup) groupMap[id] = currentGroup;
+  }
+}
+
 // ── Filter ────────────────────────────────────────────────────────────────
 function applyFilter() {
   filtered = allScreenings.filter(sc => {
-    if (filterSection !== 'all' && sc.section !== filterSection) return false;
-    if (filterVenue   !== 'all' && sc.venue   !== filterVenue)   return false;
+    if (filterGroup !== 'all' && groupMap[sc.id] !== filterGroup) return false;
+    if (filterVenue !== 'all' && sc.venue !== filterVenue)         return false;
     return true;
   });
   currentIdx = 0;
@@ -302,31 +325,23 @@ function applyFilter() {
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
-const SECTION_LABELS = {
-  'competition':'Compétition','hors-competition':'Hors Compétition',
-  'cannes-premiere':'Cannes Première','seance-speciale':'Séance Spéciale',
-  'un-certain-regard':'Un Certain Regard','cannes-classics':'Cannes Classics',
-  'cinema-de-demain':'Cinéma de Demain','seances-du-lendemain':'Séances du Lendemain',
-  'quinzaine':'Quinzaine','semaine-critique':'Semaine Critique',
-  'acid':'ACID','reprise':'Reprise','plage':'Cinéma de la Plage'
-};
-
 function buildSidebar() {
-  const secCnt = {}, venCnt = {};
+  const grpCnt = {}, venCnt = {};
   for (const sc of allScreenings) {
-    secCnt[sc.section] = (secCnt[sc.section] || 0) + 1;
-    venCnt[sc.venue]   = (venCnt[sc.venue]   || 0) + 1;
+    const g = groupMap[sc.id] || '—';
+    grpCnt[g] = (grpCnt[g] || 0) + 1;
+    venCnt[sc.venue] = (venCnt[sc.venue] || 0) + 1;
   }
 
   let html = `<div class="sb-section">
-    <span class="sb-label">Section</span>
-    ${sbItem('section','all','All Sections',allScreenings.length)}`;
-  for (const [k,c] of Object.entries(secCnt).sort((a,b)=>a[0].localeCompare(b[0]))) {
-    html += sbItem('section', k, SECTION_LABELS[k] || k, c);
+    <span class="sb-label">Group</span>
+    ${sbItem('group','all','All',allScreenings.length)}`;
+  for (const g of groups) {
+    html += sbItem('group', g, g, grpCnt[g] || 0);
   }
   html += `</div><div class="sb-section" style="border-top:1px solid #1e1e1e">
     <span class="sb-label">Venue</span>
-    ${sbItem('venue','all','All Venues',allScreenings.length)}`;
+    ${sbItem('venue','all','All',allScreenings.length)}`;
   for (const [k,c] of Object.entries(venCnt).sort((a,b)=>a[0].localeCompare(b[0]))) {
     html += sbItem('venue', k, k, c);
   }
@@ -335,14 +350,16 @@ function buildSidebar() {
 }
 
 function sbItem(type, val, label, cnt) {
-  const active = (type==='section' ? filterSection : filterVenue) === val ? 'active' : '';
-  return `<div class="sb-item ${active}" data-type="${type}" data-val="${val}" onclick="setFilter('${type}','${val}')">
-    <span>${label}</span><span class="sb-count">${cnt}</span>
+  const cur = type === 'group' ? filterGroup : filterVenue;
+  const active = cur === val ? 'active' : '';
+  const safeVal = val.replace(/'/g,"\\'");
+  return `<div class="sb-item ${active}" data-type="${type}" data-val="${esc(val)}" onclick="setFilter('${type}','${safeVal}')">
+    <span title="${esc(val)}">${esc(label)}</span><span class="sb-count">${cnt}</span>
   </div>`;
 }
 
 function setFilter(type, val) {
-  if (type === 'section') filterSection = val; else filterVenue = val;
+  if (type === 'group') filterGroup = val; else filterVenue = val;
   document.querySelectorAll(`.sb-item[data-type="${type}"]`).forEach(el => {
     el.classList.toggle('active', el.dataset.val === val);
   });
