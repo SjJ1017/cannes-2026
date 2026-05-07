@@ -656,10 +656,16 @@ function createEntry() {
   // Assign group
   groupMap[sc.id] = filterGroup !== 'all' ? filterGroup : (groups[groups.length-1] || '');
 
-  allScreenings.push(sc);
+  // Insert into allScreenings and filtered at the correct sorted position
+  const newKey = sortKey(sc);
+  const aiIdx = allScreenings.findIndex(x => sortKey(x) > newKey);
+  if (aiIdx === -1) allScreenings.push(sc); else allScreenings.splice(aiIdx, 0, sc);
+
+  const fiIdx = filtered.findIndex(x => sortKey(x) > newKey);
+  if (fiIdx === -1) { filtered.push(sc); currentIdx = filtered.length - 1; }
+  else              { filtered.splice(fiIdx, 0, sc); currentIdx = fiIdx; }
+
   newEntries.push(sc);
-  filtered.push(sc);
-  currentIdx = filtered.length - 1;
 
   // Update title index
   buildTitleIndex();
