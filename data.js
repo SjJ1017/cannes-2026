@@ -154,7 +154,7 @@ window.SCREENINGS = [
   s('bu-17-blanchett-1430','Rendez-vous avec Cate Blanchett','','Cate Blanchett','seance-speciale','BU',17,'14:30','1h30',['rendez-vous']),
   s('av-17-avedon-1845','Avedon','','Ron Howard','seance-speciale','AV',17,'18:45','1h44',[]),
   s('de-17-troisieme-1915','La Troisième Nuit','When the Night Falls','Daniel Auteuil','cannes-premiere','DE',17,'19:15','1h40',['cannes-premiere']),
-  s('gtl-17-jimqueen-0030','Jim Queen','','Marco Nguyen & Nicolas Athané','seance-speciale','GTL',17,'0:30','1h25',['seance-minuit']),
+  s('gtl-17-jimqueen-0030','Jim Queen','','Marco Nguyen & Nicolas Athané','seance-speciale','GTL',17,'0:30','1h25',["seance-minuit"]),
 
   // May 18
   s('av-18-vesna-1600','Vesna','','Rostislav Kirpičenko','seance-speciale','AV',18,'16:00','1h33',['seance-speciale']),
@@ -165,14 +165,14 @@ window.SCREENINGS = [
   // May 19
   s('av-19-lucylost-1830','Lucy Lost','','Olivier Clert','seance-speciale','AV',19,'18:30','1h25',['seance-speciale']),
   s('av-19-triangle-2000','Le Triangle d\'Or','','Hélène Rosselet-Ruiz','seance-speciale','AV',19,'20:00','1h30',['seance-speciale']),
-  s('de-19-kokurojo-2000','Kokurojo','Le Château d\'Arioka / The Samurai and the Prisoner','Kurosawa Kiyoshi','cannes-premiere','DE',19,'20:00','2h27',['cannes-premiere']),
+  s('de-19-kokurojo-2000','Kokurojo','The Samurai and the Prisoner','Kurosawa Kiyoshi','cannes-premiere','DE',19,'20:00','2h27',["cannes-premiere"]),
   s('gtl-19-diamond-2200','Diamond','','Andy Garcia','seance-speciale','GTL',19,'22:00','1h58',[]),
 
   // May 20
-  s('av-20-bataille-1845','La Bataille de Gaulle: L\'Âge de Fer','','Antonin Baudry','seance-speciale','AV',20,'18:45','2h40',[]),
-  s('bu-20-survivants-2100','Les Survivants du Che','Che Guevara: The Last Companions','Christophe Dimitri Reveille','seance-speciale','BU',20,'21:00','1h38',[]),
+  s('av-20-bataille-1845','La Bataille de Gaulle: L\'Âge de Fer','','Antonin Baudry','seance-speciale','GTL',20,'18:45','2h40',[]),
+  s('bu-20-survivants-2100','Les Survivants du Che','Che Guevara: The Last Companions','Christophe Dimitri Reveille','seance-speciale','AV',20,'19:45','1h38',[]),
   s('de-20-mariage-1930','Mariage au Goût d\'Orange','','Christophe Honoré','cannes-premiere','DE',20,'19:30','1h55',['cannes-premiere']),
-  s('gtl-20-romaelastica-0030','Roma Elastica','','Bertrand Mandico','seance-speciale','GTL',20,'0:30','1h47',['seance-minuit']),
+  s('gtl-20-romaelastica-0030','Roma Elastica','','Bertrand Mandico','seance-speciale','GTL',20,'0:30','1h47',["seance-minuit"]),
 
   // May 21
   s('bu-21-swinton-1430','Rendez-vous avec Tilda Swinton','','Tilda Swinton','seance-speciale','BU',21,'14:30','1h30',['rendez-vous']),
@@ -243,8 +243,8 @@ window.SCREENINGS = [
   s('bu-18-nostalgia-1800','Nostalgia for the Future','Nostalgie du Futur','Brecht Debackere','cannes-classics','BU',18,'18:00','1h15',[]),
   s('bu-18-metti-1945','Metti Una Sera a Cena','Love Circle','Giuseppe Patroni Griffi','cannes-classics','BU',18,'19:45','2h05',[]),
 
-  s('bu-19-stranger-1845','The Stranger','Le Criminel','Orson Welles','cannes-classics','BU',19,'18:45','1h35',[]),
-  s('de-19-duling-1800','Du Ling Zhi Ying / Goodnight Lamby / Zamine Bazi','Torino Shadow / Playground','Jia Zhang-Ke & Dustin Yellin & Amirhossein Shojaei','cannes-classics','DE',19,'18:00','1h02',[]),
+  s('bu-19-stranger-1845','The Stranger','Le Criminel','Orson Welles','cannes-classics','BU',19,'16:45','1h35',[]),
+  s('de-19-duling-1800','Du Ling Zhi Ying / Goodnight Lamby / Zamine Bazi','Torino Shadow / Playground','Jia Zhang-Ke & Dustin Yellin & Amirhossein Shojaei','cannes-classics','DE',19,'19:30','1h02',[]),
   s('bu-19-linnocente-2100','L\'Innocente','The Innocent','Luchino Visconti','cannes-classics','BU',19,'21:00','2h40',[]),
 
   s('bu-20-symphonie-1630','La Symphonie Pastorale','Pastoral Symphony','Jean Delannoy','cannes-classics','BU',20,'16:30','1h37',[]),
@@ -262,6 +262,7 @@ window.SCREENINGS = [
   s('bu-20-cinef2-1115','Sélection La Cinef — Programme 2','','Various','cinema-de-demain','BU',20,'11:15','1h21',[],{isProgramme:true,films:['Will It Rain Again Today','Tú, Yo Y La Vaca','Photograph of an Insane Woman...','Over the Threshold','Shadows of the Moonless Nights']}),
   s('bu-20-cinef3-1430','Sélection La Cinef — Programme 3','','Various','cinema-de-demain','BU',20,'14:30','1h47',[],{isProgramme:true,films:['Somewhere I Belong','Sunday\'s Children','Growing Stones, Flying Papers','Aldrig Nok']}),
   s('bu-21-cinef4-1100','Sélection La Cinef — Programme 4','','Various','cinema-de-demain','BU',21,'11:00','1h45',[],{isProgramme:true,films:['Tian Tian de Mi Mi','Pickled','Always Wanted to Be God...','Bird Rhapsody','TJ28']}),
+  s('bu-21-palmares-la-cin-1800','Palmarès La Cinef ','','','cinema-de-demain','BU',21,'18:00','',[]),
   s('de-22-courtsmetres-1100','Courts Métrages en Compétition','','Various','cinema-de-demain','DE',22,'11:00','2h28',[],{isProgramme:true}),
   s('bu-22-courtsmetres-1400','Courts Métrages en Compétition','','Various','cinema-de-demain','BU',22,'14:00','2h28',[],{isProgramme:true}),
 
@@ -286,25 +287,25 @@ window.SCREENINGS = [
   s('av-16-gentle-2130','Gentle Monster','','Marie Kreutzer','seances-du-lendemain','AV',16,'21:30','1h54',[]),
 
   s('de-17-siemsoy-0830','Siempre Soy Tu Animal Materno','Forever Your Maternal Animal','Valentina Maurel','seances-du-lendemain','DE',17,'8:30','1h40',[]),
-  s('av-17-memoirefille-0830','Mémoire de Fille','A Girl\'s Story','Judith Godréche','seances-du-lendemain','AV',17,'8:30','1h57',[]),
-  s('av-17-sheep-1030','Sheep in the Box','','Koreeda Hirokazu','seances-du-lendemain','AV',17,'10:30','2h06',[]),
+  s('av-17-memoirefille-0830','Mémoire de Fille','A Girl\'s Story','Judith Godréche','seances-du-lendemain','AV',17,'10:30','1h57',[]),
+  s('av-17-sheep-1030','Sheep in the Box','','Koreeda Hirokazu','seances-du-lendemain','AV',17,'12:45','2h06',[]),
   s('av-17-heimsuchung-2100','Heimsuchung','Visitation','Volker Schlöndorff','seances-du-lendemain','AV',17,'21:00','1h58',[]),
 
   s('de-18-illbegone-0830','I\'ll Be Gone in June','','Katharina Rivilis','seances-du-lendemain','DE',18,'8:30','2h05',[]),
   s('av-18-garance-0830','Garance','','Jeanne Herry','seances-du-lendemain','AV',18,'8:30','2h',[]),
   s('av-18-moulin-1100','Moulin','','László Nemes','seances-du-lendemain','AV',18,'11:00','2h10',[]),
   s('av-18-troisieme-1345','La Troisième Nuit','When the Night Falls','Daniel Auteuil','seances-du-lendemain','AV',18,'13:45','1h40',[]),
-  s('ba-18-alllovers-1100','All the Lovers in the Night','','Sode Yukiko','seances-du-lendemain','BA',18,'11:00','2h19',[]),
+  s('ba-18-alllovers-1100','All the Lovers in the Night','','Sode Yukiko','seances-du-lendemain','BA',18,'14:00','2h19',[]),
   s('av-18-hope-2115','Hope','','Na Hong-Jin','seances-du-lendemain','AV',18,'21:15','2h40',[]),
 
   s('de-19-masdulce-0830','La Más Dulce','Strawberries','Laïla Marrakchi','seances-du-lendemain','DE',19,'8:30','1h41',[]),
   s('av-19-fjord-1100','Fjord','','Cristian Mungiu','seances-du-lendemain','AV',19,'11:00','2h26',[]),
   s('ba-19-everytime-2030','Everytime','','Sandra Wollner','seances-du-lendemain','BA',19,'20:30','2h01',[]),
-  s('av-19-inconnue-2135','L\'Inconnue','The Unknown','Arthur Harari','seances-du-lendemain','AV',19,'21:35','2h19',[]),
+  s('av-19-inconnue-2135','L\'Inconnue','The Unknown','Arthur Harari','seances-du-lendemain','AV',19,'21:15','2h19',[]),
 
   s('de-20-corset-0830','Le Corset','Iron Boy','Louis Clichy','seances-du-lendemain','DE',20,'8:30','1h29',[]),
   s('ba-20-benimana-1845','Ben\'imana','','Marie-Clémentine Dusabejambo','seances-du-lendemain','BA',20,'18:45','1h36',[]),
-  s('av-20-kokurojo-2130','Kokurojo','The Samurai and the Prisoner','Kurosawa Kiyoshi','seances-du-lendemain','AV',20,'21:30','2h27',[]),
+  s('av-20-kokurojo-2130','Kokurojo','The Samurai and the Prisoner','Kurosawa Kiyoshi','seances-du-lendemain','AV',20,'21:00','2h27',[]),
 
   s('de-21-yesterday-0830','Yesterday the Eye Didn\'t Sleep','','Rakan Mayasi','seances-du-lendemain','DE',21,'8:30','1h40',[]),
   s('av-21-mariage-1400','Mariage au Goût d\'Orange','','Christophe Honoré','seances-du-lendemain','AV',21,'14:00','1h55',[]),
@@ -345,9 +346,11 @@ window.SCREENINGS = [
 
   // May 17
   s('cro-17-dora-0845','Dora','','July Jung','quinzaine','CRO',17,'8:45','2h17',[]),
-  s('ar-17-shana-1000','Shana','','Lila Pinell','quinzaine','AR',17,'10:00','1h23',[]),
+  s('ar-17-shana-1000','Shana','','Lila Pinell','quinzaine','AR',17,'11:30','1h23',[]),
   s('cro-17-esplosive-1215','L\'Espèce Explosive','Too Many Beasts','Sarah Arnold','quinzaine','CRO',17,'12:15','1h35',[]),
   s('cro-17-doublefreedom-1515','Double Freedom','La Libertad Doble','Lisandro Alonso','quinzaine','CRO',17,'15:15','1h40',[]),
+  s('ar-17-dora-1800','Dora','','July Jung','quinzaine','AR',17,'18:00','2h17',[]),
+  s('ar-17-l-espece-explos-2115','L\'Espèce Explosive','Too Many Beasts','Sarah Arnold','quinzaine','AR',17,'21:15','1h35',[]),
   s('ar-17-doublefreedom-2230','Double Freedom','La Libertad Doble','Lisandro Alonso','quinzaine','AR',17,'22:30','1h40',[]),
 
   // May 18
@@ -355,20 +358,26 @@ window.SCREENINGS = [
   s('ar-18-esplosive-1130','L\'Espèce Explosive','Too Many Beasts','Sarah Arnold','quinzaine','AR',18,'11:30','1h35',[]),
   s('cro-18-laperra-1145','La Perra','','Dominga Sotomayor','quinzaine','CRO',18,'11:45','1h52',[]),
   s('cro-18-carmen-1500','Carmen, l\'Oiseau Rebelle','Viva Carmen','Sébastien Laudenbach','quinzaine','CRO',18,'15:00','1h30',[]),
+  s('cro-18-once-upon-a-tim-1745','Once Upon a Time in Harlem','','William & David Greaves','quinzaine','CRO',18,'17:45','1h40',[]),
+  s('cro-18-la-perra-2030','La Perra','','Dominga Sotomayor','quinzaine','CRO',18,'20:30','1h52',[]),
   s('ar-18-clarissa-2230','Clarissa','','Arie & Chuko Esiri','quinzaine','AR',18,'22:30','2h05',[]),
 
   // May 19
   s('cro-19-lowexp-0845','Low Expectations','Lave Forventninger','Eivind Landsvik','quinzaine','CRO',19,'8:45','1h45',[]),
-  s('ar-19-harlem-1100','Once Upon a Time in Harlem','','William & David Greaves','quinzaine','AR',19,'11:00','1h40',[]),
+  s('ar-19-harlem-1100','Once Upon a Time in Harlem','','William & David Greaves','quinzaine','AR',19,'11:30','1h40',[]),
   s('cro-19-9temples-1145','9 Temples to Heaven','','Sompot Chidgasornpongse','quinzaine','CRO',19,'11:45','2h20',[]),
   s('cro-19-carmen-1520','Carmen, l\'Oiseau Rebelle','Viva Carmen','Sébastien Laudenbach','quinzaine','CRO',19,'15:20','1h30',[]),
+  s('cro-19-9-temples-to-he-1750','9 Temples to Heaven','','Sompot Chidgasornpongse','quinzaine','CRO',19,'17:50','2h20',[]),
   s('oly-19-carmen-2030','Carmen, l\'Oiseau Rebelle','Viva Carmen','Sébastien Laudenbach','quinzaine','OLY',19,'20:30','1h30',[]),
 
   // May 20
+  s('cro-19-low-expectation-2115','Low Expectations','Lave Forventninger','Eivind Landsvik','quinzaine','CRO',19,'21:15','1h45',[]),
   s('cro-20-buildings-0845','I See Buildings Fall Like Lightning','Je Vois des Immeubles Tomber comme la Foudre','Clio Barnard','quinzaine','CRO',20,'8:45','1h49',[]),
-  s('ar-20-laperra-1200','La Perra','','Dominga Sotomayor','quinzaine','AR',20,'12:00','1h52',[]),
+  s('ar-20-laperra-1200','La Perra','','Dominga Sotomayor','quinzaine','AR',20,'11:30','1h52',[]),
   s('cro-20-deathnomaste-1200','Death Has No Master','La Muerte no Tiene Dueño','Jorge Thielen Armand','quinzaine','CRO',20,'12:00','1h44',[]),
   s('cro-20-lesroches-1500','Les Roches Rouges','Red Rocks','Bruno Dumont','quinzaine','CRO',20,'15:00','1h31',[]),
+  s('cro-20-i-see-buildings-1830','I See Buildings Fall Like Lightning','Je Vois des Immeubles Tomber comme la Foudre','Clio Barnard','quinzaine','CRO',20,'18:30','1h49',[]),
+  s('cro-20-death-has-no-ma-2115','Death Has No Master','La Muerte no Tiene Dueño','Jorge Thielen Armand','quinzaine','CRO',20,'21:15','1h44',[]),
   s('ar-20-lowexp-2230','Low Expectations','Lave Forventninger','Eivind Landsvik','quinzaine','AR',20,'22:30','1h45',[]),
 
   // May 21
@@ -416,20 +425,26 @@ window.SCREENINGS = [
   s('mir-17-courts-1600','Courts Métrages — Séance Spéciale','','Various','semaine-critique','MIR',17,'16:00','1h23',[],{isProgramme:true}),
 
   // May 18
+  s('mir-17-al-mahatta-1900','al mahatta','The Station','Sara Ishaq','semaine-critique','MIR',17,'19:00','1h52',[]),
   s('mir-18-almahatta-0830','Al Mahatta','The Station','Sara Ishaq','semaine-critique','MIR',18,'8:30','1h52',[]),
   s('mir-18-tincastle-1130','Tin Castle','Irish Travellers','Alexander Murphy','semaine-critique','MIR',18,'11:30','1h46',[]),
   s('mir-18-courts1-1430','Courts Métrages — Compétition 1','','Various','semaine-critique','MIR',18,'14:30','1h31',[],{isProgramme:true}),
 
   // May 19
+  s('mir-18-tin-castle-1730','Tin Castle','Irish Travellers','Alexander Murphy','semaine-critique','MIR',18,'17:30','1h46',[]),
+  s('mir-18-courts-metrages-2045','Courts Métrages — Compétition 1','','Various','semaine-critique','MIR',18,'20:45','1h31',[]),
   s('mir-19-tincastle-0845','Tin Castle','Irish Travellers','Alexander Murphy','semaine-critique','MIR',19,'8:45','1h46',[]),
   s('mir-19-seismeses-1130','Seis Meses en el Edificio Rosa con Azul','Six Months in a Pink and Blue Building','Bruno Santamaría Razo','semaine-critique','MIR',19,'11:30','1h45',[]),
   s('mir-19-courts2-1430','Courts Métrages — Compétition 2','','Various','semaine-critique','MIR',19,'14:30','1h43',[],{isProgramme:true}),
 
   // May 20
+  s('mir-19-seis-meses-en-e-1730','Seis Meses en el Edificio Rosa con Azul','Six Months in a Pink and Blue Building','Bruno Santamaría Razo','semaine-critique','MIR',19,'17:30','1h45',[]),
+  s('mir-19-courts-metrages-2045','Courts Métrages — Compétition 2','','Various','semaine-critique','MIR',19,'20:45','1h43',[]),
   s('mir-20-seismeses-0845','Seis Meses en el Edificio Rosa con Azul','Six Months in a Pink and Blue Building','Bruno Santamaría Razo','semaine-critique','MIR',20,'8:45','1h45',[]),
   s('mir-20-adieu-1130','Adieu Monde Cruel','Goodbye Cruel World','Félix de Givry','semaine-critique','MIR',20,'11:30','4h33',[]),
   s('mir-20-palmares-1800','Cérémonie de Remise des Prix','','','semaine-critique','MIR',20,'18:00','1h',[]),
 
+  s('mir-20-adieu-monde-cru-2045','Adieu Monde Cruel','Goodbye Cruel World','Félix de Givry','semaine-critique','MIR',20,'20:45','4h33',[]),
   // ─── ACID ─────────────────────────────────────────────────────────────────
   // May 13
   s('ar-13-mauvaisetoile-2000','Mauvaise Étoile','Under a Bad Star','Lola Cambouriex & Yann Berlier','acid','AR',13,'20:00','2h05',[]),
@@ -567,12 +582,11 @@ window.SCREENINGS = [
   s('ci-x-19-alllovers-0915','All the Lovers in the Night','','Sode Yukiko','reprise','CI-X',19,'9:15','2h19',[]),
   s('ci-a-19-garance-1130','Garance','','Jeanne Herry','reprise','CI-A',19,'11:30','2h',[]),
   s('ci-i-19-fjord-1145','Fjord','','Cristian Mungiu','reprise','CI-I',19,'11:45','2h26',[]),
-  s('ci-x-19-garance-1145','Garance','','Jeanne Herry','reprise','CI-X',19,'11:45','2h',[]),
   s('ci-a-19-marieclaure-1100','L\'Affaire Marie-Claire','Women on Trial','Lauriane Escaffre & Yvo Muller','reprise','CI-X',19,'12:00','1h42',[]),
   s('ci-3-19-everytime-1315','Everytime','','Sandra Wollner','reprise','CI-3',19,'13:15','2h01',[]),
   s('ci-a-19-hope-1400','Hope','','Na Hong-Jin','reprise','CI-A',19,'14:00','2h40',[]),
   s('ci-i-19-illbegone-1415','I\'ll Be Gone in June','','Katharina Rivilis','reprise','CI-X',19,'14:15','2h05',[]),
-  s('ci-i-19-privateehell-1625','Her Private Hell','','Nicolas Winding Refn','reprise','CI-I',19,'16:45','1h49',[]),
+  s('ci-i-19-privateehell-1625','Her Private Hell','','Nicolas Winding Refn','reprise','CI-I',19,'14:45','1h49',[]),
   s('ci-x-19-masdulce-1645','La Más Dulce','Strawberries','Laïla Marrakchi','reprise','CI-3',19,'15:45','1h41',[]),
   s('ci-3-19-jimqueen-1715','Jim Queen','','Marco Nguyen & Nicolas Athané','reprise','CI-X',19,'16:45','1h25',[]),
   s('ci-x-19-papertiger-1400','Paper Tiger','','James Gray','reprise','CI-I',19,'17:15','1h55',[]),
@@ -592,11 +606,10 @@ window.SCREENINGS = [
   s('ci-i-20-diamond-1415','Diamond','','Andy Garcia','reprise','CI-I',20,'14:15','1h58',[]),
   s('ci-x-20-lucylost-1415','Lucy Lost','','Olivier Clert','reprise','CI-X',20,'14:15','1h25',[]),
   s('ci-a-20-triangle-1445','Le Triangle d\'Or','','Hélène Rosselet-Ruiz','reprise','CI-A',20,'14:45','1h30',[]),
-  s('ci-a-20-privateehell-1630','Her Private Hell','','Nicolas Winding Refn','reprise','CI-A',20,'16:30','1h49',[]),
-  s('ci-3-20-kokurojo-1645','Kokurojo','The Samurai and the Prisoner','Kurosawa Kiyoshi','reprise','CI-3',20,'16:45','2h27',[]),
-  s('ci-i-20-garance-1700','Garance','','Jeanne Herry','reprise','CI-I',20,'17:00','2h',[]),
-  s('ci-x-20-garance-1700b','Garance','','Jeanne Herry','reprise','CI-X',20,'17:00','2h',[]),
-  s('ci-a-20-hope-1845','Hope','','Na Hong-Jin','reprise','CI-A',20,'18:45','2h40',[]),
+  s('ci-a-20-privateehell-1630','Her Private Hell','','Nicolas Winding Refn','reprise','CI-X',20,'16:30','1h49',[]),
+  s('ci-3-20-kokurojo-1645','Kokurojo','The Samurai and the Prisoner','Kurosawa Kiyoshi','reprise','CI-I',20,'16:45','2h27',[]),
+  s('ci-i-20-garance-1700','Hope','','Na Hong-Jin','reprise','CI-A',20,'16:45','2h40',[]),
+  s('ci-x-20-garance-1700b','Garance','','Jeanne Herry','reprise','CI-3',20,'17:00','2h',[]),
 
   // May 21 (Reprise) — in PDF order
   s('ci-i-21-manlove-0845','The Man I Love','','Ira Sachs','reprise','CI-I',21,'8:45','1h35',[]),
@@ -607,7 +620,7 @@ window.SCREENINGS = [
   s('ci-3-21-corset-1130','Le Corset','Iron Boy','Louis Clichy','reprise','CI-3',21,'11:30','1h29',[]),
   s('ci-a-21-elephants-1145','Elephants in the Fog','','Abinash Bikram Shah','reprise','CI-A',21,'11:45','1h43',[]),
   s('ci-x-21-navidad-1145','Amarga Navidad','Bitter Christmas','Pedro Almodóvar','reprise','CI-X',21,'11:45','1h52',[]),
-  s('ci-x-21-survivants-1345','Les Survivants du Che','','Christophe Dimitri Reveille','reprise','CI-X',21,'13:45','1h38',[]),
+  s('ci-x-21-survivants-1345','Les Survivants du Che','Che Guevara: The Last Companions','Christophe Dimitri Reveille','reprise','CI-X',21,'13:45','1h38',[]),
   s('ci-a-21-diamond-1415','Diamond','','Andy Garcia','reprise','CI-A',21,'14:15','1h58',[]),
   s('ci-i-21-bataille-1415','La Bataille de Gaulle: L\'Âge de Fer','','Antonin Baudry','reprise','CI-I',21,'14:15','2h40',[]),
   s('ci-3-21-yesterday-1415','Yesterday the Eye Didn\'t Sleep','','Rakan Mayasi','reprise','CI-3',21,'14:15','1h40',[]),
